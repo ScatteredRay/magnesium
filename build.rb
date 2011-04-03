@@ -25,6 +25,15 @@ rescue Git::GitExecuteError
   # Git clone error.
 end
 
+# Take care of certs and provisioning profiles.
+DevCert = "Certificate.p12" # *.cer works?
+CertPass = "1233456789" # Perhaps we should generate this randomlly?
+#system("security import #{DevCert} -k ~/Library/Keychains/login.keychain -P #{CertPass} -T /usr/bin/codesign")
+
+# *.xcodeproj/project.pbxproj has CODE_SIGN_IDENTITY make sure those match the cert. just installed.
+
+# Do the build.
+
 Dir.chdir(BuildDirectory);
 ret = system("xcodebuild -project #{ProjName} -target #{Target} -configuration #{ConfigName} -sdk #{SDKName}")
 
