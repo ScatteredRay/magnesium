@@ -44,4 +44,10 @@ build_message.SDK = SDKName
 #end
 build_message.Certificate = ""
 
-do_build(build_message)
+str = ''
+build_message.serialize_to_string(str)
+
+message = BuildBegin.new
+message.parse_from_string(str)
+
+do_build(message)
