@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'git'
 require 'mustache'
+require 'plist'
 
 module Build
 
@@ -48,15 +49,47 @@ module Build
     end
   end
 
-  #def self.parse_project(build_directory, proj_name)
-  #  projfile = "#{build_directory}/#{proj_name}/project.pbxproj"
-     # Parse out the location of the *-Info.plist
-  #  plistfile = "..."
+  def self.parse_project(build_directory, proj_name)
+    # convert to xml
+    projfile = "#{build_directory}/#{proj_name}/project.pbxproj"
+    xmlproj = "#{build_directory}/project.xmlproj"
+    err = `plutil -convert xml1 -o #{xmlproj} #{projfile}`
+
+    if($?.exitstatus != 0)
+      unexpected_error(err)
+    end
+
+    proj = Plist::parse_xml(xmlproj)
+
+    oroot = proj["rootObject"]
+    objects = proj["objects"]
+
+    rproject = Hash.new
+
+    objects[oroot]["targets"].each do |otarget|
+      rtarget = Hash.new
+      rproject[objects[otarget]["name"]] = rtarget
+
+      obuildconfs = objects[otarget]["buildConfigurationList"]
+
+      objects[obuildconfs]["buildConfigurations"].each do |obuildconf|
+        settings = objects[obuildconf]["buildSettings"]
+	
+	rsettings = Hash.new
+	rtarget[objects[obuildconf]["name"]] = rsettings
+
+	# Check that it is a string or $(TARGET_NAME)
+	rsettings["product_name"] = settings["PRODUCT_NAME"]
+	rsettings["plist_file"] = settings['INFOPLIST_FILE']
+      end
+    end
+
+    return rproject
      # title = plist.dict.key == CFBundleName
      # bundle_id = plist.dict.key == CFBundleIdentifier
      # version = plist.dict.key == CFBundleVersion
      # Perhaps check LSRequiresIphoneOS
-  #end
+  end
 
   def self.build_ipa(build_directory, config_name, target)
     source_dir = Dir.pwd

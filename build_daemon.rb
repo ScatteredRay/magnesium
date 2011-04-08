@@ -9,7 +9,9 @@ def do_build(message)
 
   File.open(build_directory + "/Certificate.p12", "w");
   Build.install_certificate(build_directory + "/Certificate.p12") # *.cer works?
-  
+
+  Build.parse_project(build_directory, message.Project)
+
   build_msg = ''
   ret = Build.run_xcode_build(build_directory,
                               message.Project,
