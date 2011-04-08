@@ -3,17 +3,24 @@ require 'git'
 require 'mustache'
 
 module Build
+
+  def self.unexpected_error(error_message)
+  end
+
   def self.init_build_directory(build_directory, git_repo)
     begin
       Dir.mkdir(build_directory)
     rescue Errno::EEXIST
       # Directory exists!
+      return;
     end
 
     begin
       Git.clone(git_repo, build_directory);
     rescue Git::GitExecuteError
       # Git clone error.
+      #Dir.rmdir(build_directory); # Do this recursive
+      client_error("...")
     end
   end
 
@@ -24,18 +31,32 @@ module Build
     # *.xcodeproj/project.pbxproj has CODE_SIGN_IDENTITY make sure those match the cert. just installed.
   end
 
-  def self.run_xcode_build(build_directory, proj_name, target, config_name, sdk_name)
+  def self.run_xcode_build(build_directory, proj_name, target, config_name, sdk_name, ret_str)
     # Do the build.
     source_dir = Dir.pwd
     Dir.chdir(build_directory);
-    ret = system("xcodebuild -project #{proj_name} -target #{target} -configuration #{config_name} -sdk #{sdk_name}")
 
-    if(!ret)
-      # build error
-      # $?
-    end
+    ret = `xcodebuild -project #{proj_name} -target #{target} -configuration #{config_name} -sdk #{sdk_name}`
+
+    ret_str.replace(ret)
     Dir.chdir(source_dir);
+
+    if($?.exitstatus == 0)
+      return true;
+    else
+      return false;
+    end
   end
+
+  #def self.parse_project(build_directory, proj_name)
+  #  projfile = "#{build_directory}/#{proj_name}/project.pbxproj"
+     # Parse out the location of the *-Info.plist
+  #  plistfile = "..."
+     # title = plist.dict.key == CFBundleName
+     # bundle_id = plist.dict.key == CFBundleIdentifier
+     # version = plist.dict.key == CFBundleVersion
+     # Perhaps check LSRequiresIphoneOS
+  #end
 
   def self.build_ipa(build_directory, config_name, target)
     source_dir = Dir.pwd
@@ -49,23 +70,27 @@ module Build
     FileUtils.cp_r(app_path, payload)
 
     Dir.chdir(build_path)
-    ret = system("zip -r #{target}.ipa payload")
-    # fail on ret
+    ret = `zip -r #{target}.ipa payload`
     Dir.chdir(source_dir);
+
+    if($?.exitstatus != 0)
+      # This shouldn't fail, figure out when it does and how to fix it.
+      unexpected_error(ret)
+    end
 
     return ipa_path;
   end
 
-  def self.render_manifest(dest_url, target, bundle_id, version, title)
+  def self.render_manifest(dest_url, target, bundle_id, version)
     Mustache.template_file = "manifest.plist"
     view = Mustache.new
     view[:PackageUrl] = dest_url + "#{target}.ipa"
     view[:DisplayImageUrl] = dest_url + "Icon.png"
     view[:FullImageUrl] = dest_url + "Icon.png"
 
-    view[:bundle_id] = bundle_id
-    view[:version] = version
-    view[:title] = title
+    view[:bundle_id] = bundle_id # This comes from .mobileprovision
+    view[:version] = version # Where does this come from?
+    view[:title] = target # Does this seem resonable
     return view.render()
   end
 end

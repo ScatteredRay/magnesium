@@ -6,18 +6,26 @@ def do_build(message)
   dest_url = "http://arelius.com/Idtor/"
 
   Build.init_build_directory(build_directory, message.GitRepo);
-  Build.install_certificate("Certificate.p12") # *.cer works?
-  Build.run_xcode_build(build_directory,
-                        message.Project,
-                        message.Target,
-                        message.ConfigName,
-                        message.SDK)
+
+  File.open(build_directory + "/Certificate.p12", "w");
+  Build.install_certificate(build_directory + "/Certificate.p12") # *.cer works?
+  
+  build_msg = ''
+  ret = Build.run_xcode_build(build_directory,
+                              message.Project,
+                              message.Target,
+                              message.ConfigName,
+                              message.SDK,
+                              build_msg)
+  if(!ret)
+    print build_msg
+  end
+
   ipa_file = Build.build_ipa(build_directory, message.ConfigName, message.Target)
   # We need to pull this info out of the project.
   manifest = Build.render_manifest(dest_url, message.Target,
                                    "com.ibuild.Idtor",
-                                   "1.0 (1.0)",
-                                   "Idtor")
+                                   "1.0 (1.0)")
   ret = BuildSuccess.new
   ret.Manifest = manifest
   # This can't work for large IPA's we need some sort of streaming protocol.
