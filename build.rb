@@ -79,16 +79,21 @@ module Build
 	rtarget[objects[obuildconf]["name"]] = rsettings
 
 	# Check that it is a string or $(TARGET_NAME)
-	rsettings["product_name"] = settings["PRODUCT_NAME"]
+	rsettings["product_name"] = settings["PRODUCT_NAME"].gsub("$(TARGET_NAME)", objects[otarget]["name"])
 	rsettings["plist_file"] = settings['INFOPLIST_FILE']
       end
     end
 
     return rproject
-     # title = plist.dict.key == CFBundleName
-     # bundle_id = plist.dict.key == CFBundleIdentifier
-     # version = plist.dict.key == CFBundleVersion
-     # Perhaps check LSRequiresIphoneOS
+  end
+
+  def self.parse_info_plist(build_directory, project, target, conf, bundle_id, version)
+     plistfile = "#{build_directory}/#{project[target][conf]['plist_file']}"
+     plist = Plist::parse_xml(plistfile)
+
+     product_name = project[target][conf]["product_name"]
+     bundle_id.replace(plist['CFBundleIdentifier'].gsub("${PRODUCT_NAME:rfc1034identifier}", product_name.downcase))
+     version.replace(plist['CFBundleVersion'])
   end
 
   def self.build_ipa(build_directory, config_name, target)
@@ -114,16 +119,20 @@ module Build
     return ipa_path;
   end
 
-  def self.render_manifest(dest_url, target, bundle_id, version)
+  def self.render_manifest(build_directory, dest_url, target, config, project)
     Mustache.template_file = "manifest.plist"
     view = Mustache.new
     view[:PackageUrl] = dest_url + "#{target}.ipa"
     view[:DisplayImageUrl] = dest_url + "Icon.png"
     view[:FullImageUrl] = dest_url + "Icon.png"
 
-    view[:bundle_id] = bundle_id # This comes from .mobileprovision
-    view[:version] = version # Where does this come from?
-    view[:title] = target # Does this seem resonable
+    bundle_id = ''
+    version = ''
+    self.parse_info_plist(build_directory, project, target, config, bundle_id, version)
+
+    view[:BundleId] = bundle_id # This comes from .mobileprovision
+    view[:Version] = version # Where does this come from?
+    view[:Title] = target # Does this seem resonable
     return view.render()
   end
 end

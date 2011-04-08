@@ -10,7 +10,7 @@ def do_build(message)
   File.open(build_directory + "/Certificate.p12", "w");
   Build.install_certificate(build_directory + "/Certificate.p12") # *.cer works?
 
-  Build.parse_project(build_directory, message.Project)
+  project = Build.parse_project(build_directory, message.Project)
 
   build_msg = ''
   ret = Build.run_xcode_build(build_directory,
@@ -25,9 +25,7 @@ def do_build(message)
 
   ipa_file = Build.build_ipa(build_directory, message.ConfigName, message.Target)
   # We need to pull this info out of the project.
-  manifest = Build.render_manifest(dest_url, message.Target,
-                                   "com.ibuild.Idtor",
-                                   "1.0 (1.0)")
+  manifest = Build.render_manifest(build_directory, dest_url, message.Target, message.ConfigName, project)
   ret = BuildSuccess.new
   ret.Manifest = manifest
   # This can't work for large IPA's we need some sort of streaming protocol.
