@@ -1,5 +1,5 @@
 require 'build'
-require 'build.pb'
+require 'protocol/build.pb'
 
 require 'rubygems'
 require 'amqp'
