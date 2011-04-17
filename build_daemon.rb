@@ -46,6 +46,6 @@ AMQP.start(:host => "victoria.bitbane.com",
   queue = amq.queue("build")
 
   queue.subscribe do |msg|
-    do_build(BuildBegin.new.parse_from_string(msg))
+    do_build(BuildRequest.new.parse_from_string(msg).Begin)
   end
 end
