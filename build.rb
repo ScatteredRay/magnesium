@@ -8,13 +8,42 @@ module Build
   def self.unexpected_error(error_message)
   end
 
-  def self.init_build_directory(build_directory, git_repo)
-    begin
-      Dir.mkdir(build_directory)
-    rescue Errno::EEXIST
-      # Directory exists!
-      return;
+  def self.gen_build_path(user_id, project_id, build_slot)
+    return File.expand_path("~/user_builds/#{user_id}/#{project_id}_#{build_slot}")
+  end
+
+  def self.gen_temp_ipa_path(user_id, project_id, build_slot)
+    return File.expand_path("~/user_builds/ipas/#{user_id}_#{project_id}_#{build_slot}.ipa")
     end
+
+  def self.copy_ipa(ipa, user_id, project_id, build_slot)
+    # This probally should happen on install, and not on every build.
+    FileUtils.mkpath(File.expand_path("~/user_builds/ipas"))
+
+    ipa_path = gen_temp_ipa_path(user_id, project_id, build_slot)
+
+    FileUtils.cp(ipa, ipa_path)
+
+    return ipa_path
+  end
+
+  def self.clean_build(build_directory)
+    # Just going to kill the whole directory.
+    # Keeping it around may make sense to speed up
+    # builds later on if we can figure out how to
+    # clean it and patch it properlly.
+
+    FileUtils.remove_dir(build_directory)
+  end
+
+  def self.init_build_directory(build_directory, git_repo)
+    if(File.exists?(build_directory))
+      # Error if we aren't expecting this!
+      # self.unexpected_error("Build directory #{build_directory} already exists.")
+      return
+    end
+
+    FileUtils.mkpath(build_directory)
 
     begin
       Git.clone(git_repo, build_directory);
