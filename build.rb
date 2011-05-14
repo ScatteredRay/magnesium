@@ -3,20 +3,20 @@ require 'git'
 require 'mustache'
 require 'plist'
 
-module Build
+module Build extend self
 
-  def self.unexpected_error(error_message)
+  def unexpected_error(error_message)
   end
 
-  def self.gen_build_path(user_id, project_id, build_slot)
+  def gen_build_path(user_id, project_id, build_slot)
     return File.expand_path("~/user_builds/#{user_id}/#{project_id}_#{build_slot}")
   end
 
-  def self.gen_temp_ipa_path(user_id, project_id, build_slot)
+  def gen_temp_ipa_path(user_id, project_id, build_slot)
     return File.expand_path("~/user_builds/ipas/#{user_id}_#{project_id}_#{build_slot}.ipa")
     end
 
-  def self.copy_ipa(ipa, user_id, project_id, build_slot)
+  def copy_ipa(ipa, user_id, project_id, build_slot)
     # This probally should happen on install, and not on every build.
     FileUtils.mkpath(File.expand_path("~/user_builds/ipas"))
 
@@ -27,7 +27,7 @@ module Build
     return ipa_path
   end
 
-  def self.clean_build(build_directory)
+  def clean_build(build_directory)
     # Just going to kill the whole directory.
     # Keeping it around may make sense to speed up
     # builds later on if we can figure out how to
@@ -36,10 +36,10 @@ module Build
     FileUtils.remove_dir(build_directory)
   end
 
-  def self.init_build_directory(build_directory, git_repo)
+  def init_build_directory(build_directory, git_repo)
     if(File.exists?(build_directory))
       # Error if we aren't expecting this!
-      # self.unexpected_error("Build directory #{build_directory} already exists.")
+      # unexpected_error("Build directory #{build_directory} already exists.")
       return
     end
 
@@ -54,14 +54,14 @@ module Build
     end
   end
 
-  def self.install_certificate(dev_cert)
+  def install_certificate(dev_cert)
     # Take care of certs and provisioning profiles.
     cert_pass = "1233456789" # Perhaps we should generate this randomlly?
     #system("security import #{dev_cert} -k ~/Library/Keychains/login.keychain -P #{cert_pass} -T /usr/bin/codesign")
     # *.xcodeproj/project.pbxproj has CODE_SIGN_IDENTITY make sure those match the cert. just installed.
   end
 
-  def self.run_xcode_build(build_directory, proj_name, target, config_name, sdk_name, ret_str)
+  def run_xcode_build(build_directory, proj_name, target, config_name, sdk_name, ret_str)
     # Do the build.
     source_dir = Dir.pwd
     Dir.chdir(build_directory);
@@ -78,7 +78,7 @@ module Build
     end
   end
 
-  def self.parse_project(build_directory, proj_name)
+  def parse_project(build_directory, proj_name)
     # convert to xml
     projfile = "#{build_directory}/#{proj_name}/project.pbxproj"
     xmlproj = "#{build_directory}/project.xmlproj"
@@ -116,7 +116,7 @@ module Build
     return rproject
   end
 
-  def self.parse_info_plist(build_directory, project, target, conf, bundle_id, version)
+  def parse_info_plist(build_directory, project, target, conf, bundle_id, version)
      plistfile = "#{build_directory}/#{project[target][conf]['plist_file']}"
      plist = Plist::parse_xml(plistfile)
 
@@ -125,7 +125,7 @@ module Build
      version.replace(plist['CFBundleVersion'])
   end
 
-  def self.build_ipa(build_directory, config_name, target)
+  def build_ipa(build_directory, config_name, target)
     source_dir = Dir.pwd
     build_path = build_directory + "/build/#{config_name}-iphoneos"
     app_path = build_path + "/#{target}.app"
@@ -148,7 +148,7 @@ module Build
     return ipa_path;
   end
 
-  def self.render_manifest(build_directory, dest_url, target, config, project)
+  def render_manifest(build_directory, dest_url, target, config, project)
     Mustache.template_file = "manifest.plist"
     view = Mustache.new
     view[:PackageUrl] = dest_url + "#{target}.ipa"
@@ -157,7 +157,7 @@ module Build
 
     bundle_id = ''
     version = ''
-    self.parse_info_plist(build_directory, project, target, config, bundle_id, version)
+    parse_info_plist(build_directory, project, target, config, bundle_id, version)
 
     view[:BundleId] = bundle_id # This comes from .mobileprovision
     view[:Version] = version # Where does this come from?
