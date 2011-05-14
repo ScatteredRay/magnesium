@@ -12,7 +12,7 @@ def do_build(message)
 
   build_directory = Build.gen_build_path(user_id, project_id, build_slot)
 
-  Build.init_build_directory(build_directory, message.GitRepo);
+  Build.init_build_directory(build_directory, message.SourceCache);
 
   File.open(build_directory + "/Certificate.p12", "w");
   Build.install_certificate(build_directory + "/Certificate.p12") # *.cer works?

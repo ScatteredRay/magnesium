@@ -1,7 +1,7 @@
 require 'rubygems'
-require 'git'
 require 'mustache'
 require 'plist'
+require 'cache'
 
 module Build_iOS extend self
 
@@ -36,22 +36,16 @@ module Build_iOS extend self
     FileUtils.remove_dir(build_directory)
   end
 
-  def init_build_directory(build_directory, git_repo)
+  def init_build_directory(build_directory, repo)
     if(File.exists?(build_directory))
       # Error if we aren't expecting this!
       # unexpected_error("Build directory #{build_directory} already exists.")
       return
     end
 
-    FileUtils.mkpath(build_directory)
+    FileUtils.mkpath(build_directory);
 
-    begin
-      Git.clone(git_repo, build_directory);
-    rescue Git::GitExecuteError
-      # Git clone error.
-      #Dir.rmdir(build_directory); # Do this recursive
-      client_error("...")
-    end
+    Cache.cache_get(repo, build_directory);
   end
 
   def install_certificate(dev_cert)
