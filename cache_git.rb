@@ -3,8 +3,10 @@ require 'git'
 require 'protocol/cache.pb'
 
 module Cache_Git extend self
-  def cache_get(repo, dest)
+  def run_cache(repo, dest)
     #assert(repo.RepoType == Git);
+    FileUtils.mkpath(dest);
+
     begin
       Git.clone(repo.Git.GitRepo, dest);
     rescue Git::GitExecuteError

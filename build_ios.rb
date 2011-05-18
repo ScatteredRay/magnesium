@@ -43,9 +43,7 @@ module Build_iOS extend self
       return
     end
 
-    FileUtils.mkpath(build_directory);
-
-    Cache.cache_get(repo, build_directory);
+    Cache.run_cache(repo, build_directory);
   end
 
   def install_certificate(dev_cert)
@@ -157,5 +155,41 @@ module Build_iOS extend self
     view[:Version] = version # Where does this come from?
     view[:Title] = target # Does this seem resonable
     return view.render()
+  end
+
+  def run_build(build_begin)
+    user_id = 0
+    project_id = 0
+    build_slot = 0
+    dest_url = "http://arelius.com/Idtor/";
+
+    build_directory = gen_build_path(user_id, project_id, build_slot);
+
+    init_build_directory(build_directory, build_begin.SourceCache);
+    install_certificate(build_directory + "/Certificate.p12") # *.cer works?
+    project = parse_project(build_directory, build_begin.Project)
+
+    build_msg = ''
+    ret = run_xcode_build(build_directory,
+                                build_begin.Project,
+                                build_begin.Target,
+                                build_begin.ConfigName,
+                                build_begin.SDK,
+                                build_msg)
+    if(!ret)
+      print build_msg
+    end
+
+    ipa_file = build_ipa(build_directory, build_begin.ConfigName, build_begin.Target)
+    # We need to pull this info out of the project.
+    manifest = render_manifest(build_directory, dest_url, build_begin.Target, build_begin.ConfigName, project)
+    ipa_path = copy_ipa(ipa_file, user_id, project_id, build_slot)
+    clean_build(build_directory)
+    if(File.exists?(ipa_path))
+      print "IPA Exists\n"
+    else
+      print "Error: IPA missing!\n"
+    end
+    FileUtils.remove(ipa_path)
   end
 end
