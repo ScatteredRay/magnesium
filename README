@@ -1,6 +1,14 @@
+-*- Mode: Org -*-
+
 Notes:
+------
 
 * !! Build errors: Protocol buffer doesn't reference other files properlly, "require 'cache.pb'" => "require 'protocol/cache.pb'" in order for build to work, fix this!
 * Large Bulk data is going to have to be transfered manually in some modules. So this will bind some modules together on the same machine. i.e. the build and publishers are going to have to be on the same machine. It'd be nice to create a general case bulk data transfer, with perhaps some tagging on parameters to handle it, but for now we'll just deal with them being on the same machine.
 * Ideally, don't use protocol buffers to transfer data this will pervent data copying of larger data, like error buffers that protocol buffers might have trouble with.
 * We'll be using protocl buffers to define the interfaces, but it'd be nice to make the generated files not actually *require* the protobuf gems, so that we don't have to include them if we we are all on the same machine and don't need to serialize at all.
+
+Apple Certificate notes:
+------------------------
+
+Provision profile => Generate certificate.

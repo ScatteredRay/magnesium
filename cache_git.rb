@@ -9,10 +9,11 @@ module Cache_Git extend self
 
     begin
       Git.clone(repo.Git.GitRepo, dest);
-    rescue Git::GitExecuteError
+    rescue Git::GitExecuteError => e
       # Git clone error.
       #Dir.rmdir(build_directory); # Do this recursive
       #client_error("...") #TODO: Error handling
+      print e;
     end
   end
 end

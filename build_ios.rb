@@ -8,13 +8,23 @@ module Build_iOS extend self
   def unexpected_error(error_message)
   end
 
+  def gen_ipa_name(user_id, project_id, build_slot)
+    return "#{user_id}_#{project_id}_#{build_slot}.ipa"
+  end
+
+  # This goes in deploy also!
+  def gen_deploy_location(filename)
+    return File.expand_path("~/user_builds/ipas/#{filename}");
+  end
+
   def gen_build_path(user_id, project_id, build_slot)
     return File.expand_path("~/user_builds/#{user_id}/#{project_id}_#{build_slot}")
   end
 
   def gen_temp_ipa_path(user_id, project_id, build_slot)
-    return File.expand_path("~/user_builds/ipas/#{user_id}_#{project_id}_#{build_slot}.ipa")
-    end
+    ipa = gen_ipa_name(user_id, project_id, build_slot);
+    return File.expand_path("~/user_builds/ipas/#{ipa}")
+  end
 
   def copy_ipa(ipa, user_id, project_id, build_slot)
     # This probally should happen on install, and not on every build.
@@ -49,7 +59,7 @@ module Build_iOS extend self
   def install_certificate(dev_cert)
     # Take care of certs and provisioning profiles.
     cert_pass = "1233456789" # Perhaps we should generate this randomlly?
-    #system("security import #{dev_cert} -k ~/Library/Keychains/login.keychain -P #{cert_pass} -T /usr/bin/codesign")
+    system("security import #{dev_cert} -k ~/Library/Keychains/login.keychain -P #{cert_pass} -T /usr/bin/codesign")
     # *.xcodeproj/project.pbxproj has CODE_SIGN_IDENTITY make sure those match the cert. just installed.
   end
 
@@ -140,10 +150,10 @@ module Build_iOS extend self
     return ipa_path;
   end
 
-  def render_manifest(build_directory, dest_url, target, config, project)
+  def render_manifest(build_directory, dest_url, ipa_name, target, config, project)
     Mustache.template_file = "manifest.plist"
     view = Mustache.new
-    view[:PackageUrl] = dest_url + "#{target}.ipa"
+    view[:PackageUrl] = dest_url + ipa_name
     view[:DisplayImageUrl] = dest_url + "Icon.png"
     view[:FullImageUrl] = dest_url + "Icon.png"
 
@@ -161,12 +171,12 @@ module Build_iOS extend self
     user_id = 0
     project_id = 0
     build_slot = 0
-    dest_url = "http://arelius.com/Idtor/";
+    dest_url = "http://localhost:3000/";
 
     build_directory = gen_build_path(user_id, project_id, build_slot);
 
     init_build_directory(build_directory, build_begin.SourceCache);
-    install_certificate(build_directory + "/Certificate.p12") # *.cer works?
+    install_certificate(build_begin.Certificate) # *.cer works?
     project = parse_project(build_directory, build_begin.Project)
 
     build_msg = ''
@@ -182,14 +192,17 @@ module Build_iOS extend self
 
     ipa_file = build_ipa(build_directory, build_begin.ConfigName, build_begin.Target)
     # We need to pull this info out of the project.
-    manifest = render_manifest(build_directory, dest_url, build_begin.Target, build_begin.ConfigName, project)
+    ipa_name = gen_ipa_name(user_id, project_id, build_slot);
+    manifest = render_manifest(build_directory, dest_url, ipa_name, build_begin.Target, build_begin.ConfigName, project)
     ipa_path = copy_ipa(ipa_file, user_id, project_id, build_slot)
+    # This should go into deploy!
+    File.open(gen_deploy_location("#{user_id}_#{project_id}_#{build_slot}.manifest"), 'w') {|f| f.write(manifest) }
     clean_build(build_directory)
     if(File.exists?(ipa_path))
       print "IPA Exists\n"
     else
       print "Error: IPA missing!\n"
     end
-    FileUtils.remove(ipa_path)
+    #FileUtils.remove(ipa_path)
   end
 end

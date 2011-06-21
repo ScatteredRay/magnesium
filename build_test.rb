@@ -2,9 +2,11 @@ require 'build'
 require 'protocol/build.pb'
 require 'protocol/cache.pb'
 
-GitRepo = "/Users/indy/dev/Idtor"
-ProjName = "idtor.xcodeproj"
-Target = "Idtor"
+GitRepo = File.expand_path("../mg-test");
+Certificate = File.expand_path("../mg-test/Certificate.cer"); #p12??
+MobileProvision = File.expand_path("../mg-test/profile.mobileprovision");
+ProjName = "simple.xcodeproj"
+Target = "simple"
 ConfigName = "Release"
 SDKName = "iphoneos4.3"
 
@@ -21,7 +23,9 @@ build_begin.Project = ProjName;
 build_begin.Target = Target;
 build_begin.ConfigName = ConfigName;
 build_begin.SDK = SDKName;
-build_begin.Certificate = "";
+build_begin.Certificate = Certificate;
 
 Build.run_build(build_begin);
+# This shouldn't be here.
+Build.gen_deploy_location("profile.mobileprovision");
 
